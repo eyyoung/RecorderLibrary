@@ -90,9 +90,13 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                     mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_too_short)));
                 }
 
-                mVolumeChangeSubscription.unsubscribe();
+                if (mVolumeChangeSubject != null) {
+                    mVolumeChangeSubscription.unsubscribe();
+                }
                 mRecordSubject.onCompleted();
-                mTimeSubscription.unsubscribe();
+                if (mTimeSubscription != null) {
+                    mTimeSubscription.unsubscribe();
+                }
                 mRecordSubscription.unsubscribe();
                 break;
         }
@@ -160,6 +164,9 @@ class AudioRecordTouchListener implements View.OnTouchListener {
         @Override
         public void onError(Throwable e) {
             e.printStackTrace();
+            if (mTimeSubscription != null) {
+                mTimeSubscription.unsubscribe();
+            }
             try {
                 if (mRecorder != null) {
                     mRecorder.stop();
@@ -196,7 +203,7 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                     .subscribe(new Action1<Long>() {
                         @Override
                         public void call(Long t1) {
-                            if (getDuration()> (mAudioRecordConfig.getMaxRecordTime())) {
+                            if (getDuration() > (mAudioRecordConfig.getMaxRecordTime())) {
                                 mVolumeChangeSubscription.unsubscribe();
                                 // 超时异常
                                 mRecordSubject.onError(new TimeoutException(mContext.getString(R.string.audio_record_too_long)));
@@ -213,7 +220,9 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new VolumeChangeSubscriber());
         }
-    };
+    }
+
+    ;
 
     private class VolumeChangeSubscriber extends Subscriber<Object> {
 
@@ -232,7 +241,9 @@ class AudioRecordTouchListener implements View.OnTouchListener {
             int volume = mRecorder.getMaxAmplitude();
             mAudioRecordCallback.updateVolumeView(volume);
         }
-    };
+    }
+
+    ;
 
     private static long floarDuration(long duration) {
         return (int) Math.floor(duration / 1000);
