@@ -4,7 +4,8 @@ import android.app.Dialog;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -18,8 +19,11 @@ import com.nd.android.common.widget.recorder.library.UUIDFileNameGenerator;
 import com.nd.android.common.widget.recorder.library.player.AudioRecordPlayerConfig;
 import com.nd.android.common.widget.recorder.library.player.SensorPlayerCallback;
 
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
-public class MainActivity extends ActionBarActivity {
+
+public class MainActivity extends AppCompatActivity {
 
     private ImageView mIvState;
 
@@ -40,10 +44,65 @@ public class MainActivity extends ActionBarActivity {
                 .setRecrodPathGenerator(new UUIDFileNameGenerator("/sdcard"))
                 .setVolumeChangeDuration(300)
                 .setCallback(new DefaultAudioRecordCallback(this) {
+
+                    @Override
+                    public void tryToCancelRecord() {
+                        super.tryToCancelRecord();
+                        Log.d("MainActivity", "try");
+                    }
+
+                    @Override
+                    public void recordError(Throwable t) {
+                        super.recordError(t);
+                        Log.d("MainActivity", "recordError");
+                    }
+
+                    @Override
+                    public void startRecord() {
+                        super.startRecord();
+                        Log.d("MainActivity", "startRecord");
+                    }
+
+                    @Override
+                    public void normalRecord() {
+                        super.normalRecord();
+                        Log.d("MainActivity", "normalRecord");
+                    }
+
                     @Override
                     public void recordSuccess(String pRecordPath) {
                         super.recordSuccess(pRecordPath);
-                        Toast.makeText(MainActivity.this, "录音成功", Toast.LENGTH_LONG).show();
+                        Log.d("MainActivity", "recordSuccess");
+                        MediaPlayer mDurationPlayer = new MediaPlayer();
+                        mDurationPlayer.reset();
+                        try {
+                            mDurationPlayer.setDataSource(pRecordPath);
+                            mDurationPlayer.prepare();
+                            Toast.makeText(MainActivity.this, "录音成功" + mDurationPlayer.getDuration(), Toast.LENGTH_LONG).show();
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            mDurationPlayer.release();
+                        }
+                    }
+
+                    @Override
+                    public void recordTooLong(String pRecordPath, TimeoutException pException) {
+                        super.recordTooLong(pRecordPath, pException);
+                        Log.d("MainActivity", "recordTooLong");
+                        MediaPlayer mDurationPlayer = new MediaPlayer();
+                        mDurationPlayer.reset();
+                        try {
+                            mDurationPlayer.setDataSource(pRecordPath);
+                            mDurationPlayer.prepare();
+                            Toast.makeText(MainActivity.this, "录音太长" + mDurationPlayer.getDuration(), Toast.LENGTH_LONG).show();
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            mDurationPlayer.release();
+                        }
                     }
                 })
                 .build();
@@ -55,12 +114,22 @@ public class MainActivity extends ActionBarActivity {
         AudioRecordPlayerConfig playerConfig = new AudioRecordPlayerConfig.Builder(MainActivity.this)
                 .setAudioRecordPlayerCallback(new SensorPlayerCallback(MainActivity.this) {
                     @Override
-                    public void onStopPlayer(MediaPlayer pMediaPlayer) {
-                        super.onStopPlayer(pMediaPlayer);
+                    public void onStopPlayer() {
+                        super.onStopPlayer();
                         final AnimationDrawable drawable = (AnimationDrawable) mIvState.getDrawable();
                         if (drawable != null) {
                             drawable.stop();
                         }
+                    }
+
+                    @Override
+                    public void onPlayComplete() {
+                        super.onPlayComplete();
+                        final AnimationDrawable drawable = (AnimationDrawable) mIvState.getDrawable();
+                        if (drawable != null) {
+                            drawable.stop();
+                        }
+                        Log.e("TEST", "COMPLETE");
                     }
                 })
                 .setFilePath("/sdcard/test.amr")
@@ -100,12 +169,27 @@ public class MainActivity extends ActionBarActivity {
                     @Override
                     public void recordSuccess(String pRecordPath) {
                         super.recordSuccess(pRecordPath);
-                        Toast.makeText(MainActivity.this, "录音成功", Toast.LENGTH_LONG).show();
+                        MediaPlayer mDurationPlayer = new MediaPlayer();
+                        mDurationPlayer.reset();
+                        try {
+                            mDurationPlayer.setDataSource(pRecordPath);
+                            mDurationPlayer.prepare();
+                            Toast.makeText(MainActivity.this, "录音成功" + mDurationPlayer.getDuration(), Toast.LENGTH_LONG).show();
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            mDurationPlayer.release();
+                        }
                     }
                 })
                 .build();
         dialog.findViewById(R.id.btnDlgRecord)
                 .setOnTouchListener(AudioRecordManager.getTouchListener(audioRecordConfig));
         dialog.show();
+    }
+
+    public void outSideClick(View view) {
+        Toast.makeText(this, "TEST", Toast.LENGTH_SHORT).show();
     }
 }

@@ -20,7 +20,7 @@ public class ExtendMediaPlayer extends MediaPlayer {
     @Override
     public void stop() throws IllegalStateException {
         super.stop();
-        mRecordPlayerCallback.onStopPlayer(this);
+        mRecordPlayerCallback.onStopPlayer();
     }
 
     @Override

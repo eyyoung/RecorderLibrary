@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.util.Log;
 
 /**
@@ -22,6 +23,8 @@ public class SensorPlayerCallback implements AudioRecordPlayerCallback {
     private SensorManager mSensorManager;
     private Sensor mSensor;
 
+    private boolean mOnlyHeadset;
+
     public SensorPlayerCallback(Context pContext) {
         mContext = pContext;
         mAudioManager = (AudioManager) pContext.getSystemService(Context.AUDIO_SERVICE);
@@ -32,7 +35,11 @@ public class SensorPlayerCallback implements AudioRecordPlayerCallback {
     @Override
     public void onInitPlayer(MediaPlayer pMediaPlayer) {
         mAudioManager.setSpeakerphoneOn(true);
-        mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        if (!mOnlyHeadset) {
+            mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        } else {
+            setHeadsetMode();
+        }
         mSensorManager.registerListener(mSensorEventListener, mSensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
@@ -42,30 +49,34 @@ public class SensorPlayerCallback implements AudioRecordPlayerCallback {
     }
 
     @Override
-    public void onStopPlayer(MediaPlayer pMediaPlayer) {
+    public void onStopPlayer() {
+        mSensorManager.unregisterListener(mSensorEventListener);
+    }
+
+    @Override
+    public void onPlayComplete() {
         mSensorManager.unregisterListener(mSensorEventListener);
     }
 
     private SensorEventListener mSensorEventListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
-            Log.e(TAG, "onSensorChanged");
+            Log.d(TAG, "onSensorChanged");
             float range = event.values[0];
-            int mode;
-            if (range >= mSensor.getMaximumRange()) {
-                mode = AudioManager.MODE_NORMAL;
+            Log.d(TAG, "range:" + range);
+            if (range >= 5 && !mOnlyHeadset) {
+                mAudioManager.setMode(AudioManager.MODE_NORMAL);
                 mAudioManager.setSpeakerphoneOn(true);
                 if (mContext instanceof Activity) {
                     ((Activity) mContext).setVolumeControlStream(AudioManager.STREAM_MUSIC);
                 }
             } else {
-                mode = AudioManager.MODE_IN_CALL;
+                setHeadsetMode();
                 mAudioManager.setSpeakerphoneOn(false);
                 if (mContext instanceof Activity) {
                     ((Activity) mContext).setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
                 }
             }
-            mAudioManager.setMode(mode);
         }
 
         @Override
@@ -73,4 +84,17 @@ public class SensorPlayerCallback implements AudioRecordPlayerCallback {
 
         }
     };
+
+    private void setHeadsetMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        } else {
+            mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+        }
+    }
+
+    public void setHeadsetMode(boolean onlyHeadset) {
+        mOnlyHeadset = onlyHeadset;
+    }
+
 }

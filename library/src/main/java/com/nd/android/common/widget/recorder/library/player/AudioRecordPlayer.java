@@ -2,7 +2,6 @@ package com.nd.android.common.widget.recorder.library.player;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
@@ -13,6 +12,7 @@ import java.io.File;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
 
 /**
  * 录音文件播放器
@@ -25,6 +25,7 @@ public class AudioRecordPlayer {
     private static final String TAG = "AudioRecordPlayer";
 
     private static ExtendMediaPlayer mMediaPlayer;
+    private static Subscription sSubscription;
 
     /**
      * 播放声音
@@ -33,7 +34,7 @@ public class AudioRecordPlayer {
      * @throws IllegalStateException the illegal state exception
      * @author Young
      */
-    public static boolean play(Context pContext, AudioRecordPlayerConfig pConfig) throws IllegalStateException {
+    public static boolean play(final Context pContext, AudioRecordPlayerConfig pConfig) throws IllegalStateException {
         if (pConfig.getFilePath() == null) {
             Log.e(TAG, "Play Error:Null Record File");
             throw new IllegalStateException(pContext.getString(R.string.audio_record_file_null));
@@ -45,35 +46,40 @@ public class AudioRecordPlayer {
         final AudioRecordPlayerCallback playerCallback = pConfig.getAudioRecordPlayerCallback();
         try {
             if (mMediaPlayer != null) {
-                mMediaPlayer.stop();
+                if (mMediaPlayer.isPlaying()) {
+                    mMediaPlayer.stop();
+                }
                 mMediaPlayer.release();
+            }
+            if (sSubscription != null) {
+                sSubscription.unsubscribe();
             }
 
             Uri uri = Uri.fromFile(file);
             mMediaPlayer = new ExtendMediaPlayer();
-            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
+            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mMediaPlayer.setDataSource(pContext, uri);
             mMediaPlayer.setRecordPlayerCallback(playerCallback);
             if (playerCallback != null) {
                 playerCallback.onInitPlayer(mMediaPlayer);
             }
         } catch (Exception e) {
-            playerCallback.onStopPlayer(mMediaPlayer);
+            playerCallback.onStopPlayer();
         }
 
         Observable<Pair<Integer, Integer>> observable = RxMediaPlayer.play(mMediaPlayer);
         playerCallback.onStartPlayer(mMediaPlayer);
-        observable.subscribe(new Subscriber<Pair<Integer, Integer>>() {
+        sSubscription = observable.subscribe(new Subscriber<Pair<Integer, Integer>>() {
             @Override
             public void onCompleted() {
                 mMediaPlayer = null;
-                playerCallback.onStopPlayer(mMediaPlayer);
+                playerCallback.onPlayComplete();
             }
 
             @Override
             public void onError(Throwable e) {
                 Log.e(TAG, e.getMessage());
-                playerCallback.onStopPlayer(mMediaPlayer);
+                playerCallback.onStopPlayer();
             }
 
             @Override
@@ -91,6 +97,13 @@ public class AudioRecordPlayer {
      */
     public static boolean stop() {
         RxMediaPlayer.stop(mMediaPlayer);
+        if (mMediaPlayer != null) {
+            mMediaPlayer.release();
+            mMediaPlayer = null;
+        }
+        if (sSubscription != null) {
+            sSubscription.unsubscribe();
+        }
         return true;
     }
 

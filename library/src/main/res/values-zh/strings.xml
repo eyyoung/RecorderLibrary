@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Library</string>
+    <string name="audio_record_oper_cancel">取消录音</string>
+    <string name="audio_record_finger_move_to_cancel">手指上滑，取消发送</string>
+    <string name="audio_record_finger_release_to_cancell">松开手指，取消发送</string>
+    <string name="audio_record_too_long">录音太长</string>
+    <string name="audio_record_too_short">录音太短</string>
+    <string name="audio_record_file_null">录音文件异常</string>
+    <string name="audio_record_file_not_exist">录音文件不存在</string>
+</resources>

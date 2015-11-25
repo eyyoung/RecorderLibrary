@@ -15,8 +15,6 @@ import rx.subscriptions.Subscriptions;
 
 class RxMediaPlayer {
 
-    public static Subscriber<? super ExtendMediaPlayer> mSubscriber;
-
     static
     @NonNull
     Observable<ExtendMediaPlayer> prepare(@NonNull final ExtendMediaPlayer mp) {
@@ -68,10 +66,6 @@ class RxMediaPlayer {
                 subscriber.add(Subscriptions.create(new Action0() {
                     @Override
                     public void call() {
-                        if (mp.isPlaying()) {
-                            mp.stop();
-                        }
-                        mp.reset();
                         mp.release();
                     }
                 }));
@@ -86,11 +80,15 @@ class RxMediaPlayer {
     static
     @NonNull
     Observable<Pair<Integer, Integer>> ticks(@NonNull final ExtendMediaPlayer mp) {
-        return Observable.interval(16, TimeUnit.MILLISECONDS)
+        return Observable.interval(500, TimeUnit.MILLISECONDS)
                 .map(new Func1<Long, Pair<Integer, Integer>>() {
                     @Override
                     public Pair<Integer, Integer> call(Long t1) {
-                        return Pair.create(mp.getCurrentPosition(), mp.getDuration());
+                        try {
+                            return Pair.create(mp.getCurrentPosition(), mp.getDuration());
+                        } catch (Exception e) {
+                            return Pair.create(null, null);
+                        }
                     }
                 });
     }
@@ -101,7 +99,6 @@ class RxMediaPlayer {
         return Observable.create(new Observable.OnSubscribe<ExtendMediaPlayer>() {
             @Override
             public void call(final Subscriber<? super ExtendMediaPlayer> subscriber) {
-                mSubscriber = subscriber;
                 player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
@@ -128,12 +125,6 @@ class RxMediaPlayer {
             }
         } catch (Exception e) {
 
-        }
-        if (mSubscriber != null) {
-            mSubscriber.onNext(pExtendMediaPlayer);
-            mSubscriber.onCompleted();
-            mSubscriber.unsubscribe();
-            mSubscriber = null;
         }
     }
 

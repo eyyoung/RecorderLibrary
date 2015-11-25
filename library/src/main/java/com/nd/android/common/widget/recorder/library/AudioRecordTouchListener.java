@@ -1,8 +1,8 @@
 package com.nd.android.common.widget.recorder.library;
 
 import android.content.Context;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import rx.Observable;
-import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -32,18 +31,17 @@ class AudioRecordTouchListener implements View.OnTouchListener {
 
     private IAudioRecordCallback mAudioRecordCallback;
 
-    private PublishSubject<Object> mMinSubject;
     private PublishSubject<Object> mRecordSubject;
     private Observable<Long> mVolumeChangeSubject;
 
     private AudioRecordConfig mAudioRecordConfig;
 
     private MediaRecorder mRecorder;
-    private Subscription mMinSubscription;
     private Subscription mRecordSubscription;
     private Subscription mVolumeChangeSubscription;
     private Subscription mTimeSubscription;
     private String mRecordPath;
+    private boolean mIsTryToCancel;
 
     public AudioRecordTouchListener(AudioRecordConfig pAudioRecordConfig) {
         mAudioRecordConfig = pAudioRecordConfig;
@@ -56,47 +54,12 @@ class AudioRecordTouchListener implements View.OnTouchListener {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mContext = v.getContext();
-                // 最短观察者
-                mMinSubject = PublishSubject.create();
-                mMinSubscription = mMinSubject
-                        .take(mAudioRecordConfig.getMinRecordTime(), TimeUnit.MILLISECONDS, Schedulers.computation())    // 不响应最小时间后面的onNext用以判断
-                        .subscribe(mMinSubscriber);
-
-                // 音量变化
-                mVolumeChangeSubject = Observable.interval(mAudioRecordConfig.getVolumeChangeDuration(), TimeUnit.MILLISECONDS, Schedulers.computation());
-                mVolumeChangeSubscription = mVolumeChangeSubject
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(mVolumeChangeSubscriber);
-
-                // 时间变化
-                mTimeSubscription = Observable.interval(1000, TimeUnit.MILLISECONDS, Schedulers.computation())
-                        .map(new Func1<Long, Long>() {
-                            long currentTime = 0;
-
-                            @Override
-                            public Long call(Long t1) {
-                                return ++currentTime;
-                            }
-                        })
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Action1<Long>() {
-                            @Override
-                            public void call(Long t1) {
-                                if (t1 > mAudioRecordConfig.getMaxRecordTime() / 1000) {
-                                    mVolumeChangeSubscription.unsubscribe();
-                                    // 超时异常
-                                    mRecordSubject.onError(new TimeoutException(mContext.getString(R.string.audio_record_too_long)));
-                                } else {
-                                    mAudioRecordCallback.updateTime(t1, mAudioRecordConfig.getMaxRecordTime() / 1000);
-                                }
-                            }
-                        });
 
                 // 录音操作观察者
                 mRecordSubject = PublishSubject.create();
                 mRecordSubscription = mRecordSubject
                         .observeOn(Schedulers.immediate())
-                        .subscribe(mRecordSubsriber);
+                        .subscribe(new RecorderSubscriber());
                 mRecordSubject.onNext(null);
                 mAudioRecordCallback.updateTime(0, mAudioRecordConfig.getMaxRecordTime() / 1000);
                 break;
@@ -105,8 +68,13 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                 if (y < -100) {
                     // 切换图像
                     mAudioRecordCallback.tryToCancelRecord();
+                    mIsTryToCancel = true;
                 } else {
-                    mAudioRecordCallback.normalRecord();
+                    // 避免频繁调用
+                    if (mIsTryToCancel) {
+                        mAudioRecordCallback.normalRecord();
+                        mIsTryToCancel = false;
+                    }
                 }
                 break;
             case MotionEvent.ACTION_CANCEL:
@@ -115,9 +83,13 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                 if (y < -100) {
                     mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_oper_cancel)));
                 }
-                mMinSubject.onNext(null);
 
-                mMinSubscription.unsubscribe();
+                long duration = 0;
+                duration = getDuration();
+                if (duration < mAudioRecordConfig.getMinRecordTime()) {
+                    mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_too_short)));
+                }
+
                 mVolumeChangeSubscription.unsubscribe();
                 mRecordSubject.onCompleted();
                 mTimeSubscription.unsubscribe();
@@ -125,6 +97,22 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                 break;
         }
         return true;
+    }
+
+    private long getDuration() {
+        long duration = 0;
+        MediaPlayer durationPlayer = new MediaPlayer();
+        durationPlayer.reset();
+        try {
+            durationPlayer.setDataSource(mRecordPath);
+            durationPlayer.prepare();
+            duration = durationPlayer.getDuration();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            durationPlayer.release();
+        }
+        return duration;
     }
 
     private void initRecorder() {
@@ -151,7 +139,7 @@ class AudioRecordTouchListener implements View.OnTouchListener {
 
     }
 
-    private final Observer<? super Object> mRecordSubsriber = new Subscriber<Object>() {
+    private class RecorderSubscriber extends Subscriber<Object> {
         @Override
         public void onCompleted() {
             try {
@@ -171,7 +159,7 @@ class AudioRecordTouchListener implements View.OnTouchListener {
 
         @Override
         public void onError(Throwable e) {
-            Log.e("AudioRecord", e.getMessage());
+            e.printStackTrace();
             try {
                 if (mRecorder != null) {
                     mRecorder.stop();
@@ -195,28 +183,39 @@ class AudioRecordTouchListener implements View.OnTouchListener {
 
         @Override
         public void onNext(Object t) {
+            // 时间变化
+            mTimeSubscription = Observable.interval(500, TimeUnit.MILLISECONDS, Schedulers.computation())
+                    .map(new Func1<Long, Long>() {
+                        @Override
+                        public Long call(Long t1) {
+                            long duration = getDuration();
+                            return duration;
+                        }
+                    })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Action1<Long>() {
+                        @Override
+                        public void call(Long t1) {
+                            if (getDuration()> (mAudioRecordConfig.getMaxRecordTime())) {
+                                mVolumeChangeSubscription.unsubscribe();
+                                // 超时异常
+                                mRecordSubject.onError(new TimeoutException(mContext.getString(R.string.audio_record_too_long)));
+                            } else {
+                                mAudioRecordCallback.updateTime(floarDuration(t1), mAudioRecordConfig.getMaxRecordTime() / 1000);
+                            }
+                        }
+                    });
+
             initRecorder();
+            // 音量变化
+            mVolumeChangeSubject = Observable.interval(mAudioRecordConfig.getVolumeChangeDuration(), TimeUnit.MILLISECONDS, Schedulers.computation());
+            mVolumeChangeSubscription = mVolumeChangeSubject
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new VolumeChangeSubscriber());
         }
     };
 
-    private Observer<? super Object> mMinSubscriber = new Subscriber<Object>() {
-        @Override
-        public void onCompleted() {
-
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            Log.e("AudioRecord", e.getMessage());
-        }
-
-        @Override
-        public void onNext(Object t) {
-            mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_too_short)));
-        }
-    };
-
-    private Observer<? super Object> mVolumeChangeSubscriber = new Subscriber<Object>() {
+    private class VolumeChangeSubscriber extends Subscriber<Object> {
 
         @Override
         public void onCompleted() {
@@ -225,7 +224,7 @@ class AudioRecordTouchListener implements View.OnTouchListener {
 
         @Override
         public void onError(Throwable e) {
-            Log.e("AudioRecord", e.getMessage());
+            e.printStackTrace();
         }
 
         @Override
@@ -234,4 +233,8 @@ class AudioRecordTouchListener implements View.OnTouchListener {
             mAudioRecordCallback.updateVolumeView(volume);
         }
     };
+
+    private static long floarDuration(long duration) {
+        return (int) Math.floor(duration / 1000);
+    }
 }

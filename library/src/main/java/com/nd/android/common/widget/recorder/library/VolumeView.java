@@ -44,12 +44,7 @@ public class VolumeView extends View {
     }
 
     public Bitmap drawableToBitmap(int id) {
-        try {
-            return BitmapFactory.decodeResource(mContext.getResources(), id);
-        } catch (RuntimeException e) {
-            System.gc();
-        }
-        return null;
+        return BitmapFactory.decodeResource(mContext.getResources(), id);
     }
 
     int marginTop = 0;
@@ -63,7 +58,11 @@ public class VolumeView extends View {
 
         } else {
             marginTop = 153 - mVolume * 23 - 15;
-            paramCanvas.drawBitmap(list.get(mVolume), 0, marginTop, null);
+            final Bitmap bitmap = list.get(mVolume);
+            if (bitmap != null && bitmap.isRecycled()) {
+                return;
+            }
+            paramCanvas.drawBitmap(bitmap, 0, marginTop, null);
         }
     }
 

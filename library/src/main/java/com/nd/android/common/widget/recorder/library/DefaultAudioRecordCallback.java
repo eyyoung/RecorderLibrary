@@ -71,7 +71,7 @@ public class DefaultAudioRecordCallback implements IAudioRecordCallback {
     @Override
     public void recordError(Throwable t) {
         if (mPopWindow != null && mPopWindow.isShowing()) {
-            mPopWindow.dismiss();
+            mPopWindow.patchDismiss();
         }
         Toast.makeText(mContext, t.getMessage(), Toast.LENGTH_LONG).show();
     }
@@ -79,7 +79,7 @@ public class DefaultAudioRecordCallback implements IAudioRecordCallback {
     @Override
     public void recordSuccess(String pRecordPath) {
         if (mPopWindow != null && mPopWindow.isShowing()) {
-            mPopWindow.dismiss();
+            mPopWindow.patchDismiss();
         }
     }
 
@@ -114,7 +114,7 @@ public class DefaultAudioRecordCallback implements IAudioRecordCallback {
     @Override
     public void recordTooLong(String pRecordPath, TimeoutException pException) {
         if (mPopWindow != null && mPopWindow.isShowing()) {
-            mPopWindow.dismiss();
+            mPopWindow.patchDismiss();
         }
         Toast.makeText(mContext, pException.getMessage(), Toast.LENGTH_LONG).show();
     }

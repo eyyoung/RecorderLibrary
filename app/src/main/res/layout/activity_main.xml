@@ -16,6 +16,13 @@
         android:layout_height="wrap_content"/>
 
     <Button
+        android:onClick="outSideClick"
+        android:text="Outside Touch"
+        android:layout_above="@id/btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
         android:id="@+id/btnPlay"
         android:text="Play"
         android:onClick="play"
@@ -41,7 +48,7 @@
     <ImageView
         android:id="@+id/ivState"
         android:layout_marginTop="20dp"
-        android:layout_below="@id/btnStop"
+        android:layout_below="@id/btnDlg"
         android:layout_centerHorizontal="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>

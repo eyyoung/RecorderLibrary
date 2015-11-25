@@ -13,7 +13,7 @@ import android.widget.TextView;
  *
  * @author Young
  */
-public class AudioRecordPopWindow extends PopupWindow {
+public class AudioRecordPopWindow extends PopupWindow implements View.OnClickListener {
 
     private final View mLlMobileHint;
     private final View mIvCancel;
@@ -21,6 +21,12 @@ public class AudioRecordPopWindow extends PopupWindow {
     private final View mTvReleaseHint;
     private final VolumeView mVolumeView;
     private final TextView mTvTimeRemaining;
+
+    public void setCanDismiss(boolean pCanDismiss) {
+        mCanDismiss = pCanDismiss;
+    }
+
+    private boolean mCanDismiss = false;
 
     /**
      * 更新音量
@@ -40,6 +46,11 @@ public class AudioRecordPopWindow extends PopupWindow {
      */
     public void updateTime(String pTime) {
         mTvTimeRemaining.setText(pTime);
+    }
+
+    @Override
+    public void onClick(View v) {
+
     }
 
     /**
@@ -68,6 +79,7 @@ public class AudioRecordPopWindow extends PopupWindow {
         ColorDrawable dw = new ColorDrawable(0x00);
         setBackgroundDrawable(dw);
         setOutsideTouchable(false);
+        view.setOnClickListener(this);
     }
 
     /**
@@ -93,4 +105,15 @@ public class AudioRecordPopWindow extends PopupWindow {
         }
     }
 
+    public void patchDismiss(){
+        mCanDismiss = true;
+        dismiss();
+    }
+
+    @Override
+    public void dismiss() {
+        if(mCanDismiss) {
+            super.dismiss();
+        }
+    }
 }

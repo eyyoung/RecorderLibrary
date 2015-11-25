@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Perpustakaan</string>
+    <string name="audio_record_oper_cancel">Batal</string>
+    <string name="audio_record_finger_move_to_cancel">Geser keatas untuk batal kirim</string>
+    <string name="audio_record_finger_release_to_cancell">Lepas untuk batal kirim</string>
+    <string name="audio_record_too_long">Rekaman kepanjangan</string>
+    <string name="audio_record_too_short">Rekaman kependekan</string>
+    <string name="audio_record_file_null">Rekaman tidak normal</string>
+    <string name="audio_record_file_not_exist">Rekaman tidak ada</string>
+</resources>

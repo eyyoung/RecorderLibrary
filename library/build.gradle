@@ -2,10 +2,10 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
-        minSdkVersion 9
+        minSdkVersion 15
         targetSdkVersion 21
         versionCode 1
         versionName "1.0"
@@ -20,8 +20,10 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:support-v4:21.0.3'
-    compile 'com.netflix.rxjava:rxjava-android:0.20.7'
+    compile 'com.android.support:support-v4:22.2.1'
+    compile 'com.android.support:support-annotations:22.2.1'
+    compile 'io.reactivex:rxandroid:1.0.1'
+    compile 'io.reactivex:rxjava:1.0.14'
 }
 
 apply plugin: 'maven'
@@ -32,7 +34,7 @@ uploadArchives {
             repository(url: "http://nexus.sdp.nd/nexus/content/repositories/android-3rd/") {
                 authentication(userName: mavenUser, password: mavenPassword)
             }
-            pom.version = "0.1.11"
+            pom.version = "0.1.28"
             pom.artifactId = "library"
             pom.groupId = "com.nd.android.sdp.im.common.widget.recorder"
         }

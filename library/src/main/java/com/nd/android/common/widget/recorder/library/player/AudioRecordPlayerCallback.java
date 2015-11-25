@@ -26,8 +26,9 @@ public interface AudioRecordPlayerCallback {
     /**
      * 停止操作
      *
-     * @param pMediaPlayer the media player
      * @author Young
      */
-    void onStopPlayer(MediaPlayer pMediaPlayer);
+    void onStopPlayer();
+
+    void onPlayComplete();
 }
