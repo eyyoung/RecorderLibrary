@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ห้องสมุด</string>
+    <string name="audio_record_oper_cancel">ยกเลิกการบันทึก</string>
+    <string name="audio_record_finger_move_to_cancel">เลื่อนขึ้นเพื่อยกเลิก</string>
+    <string name="audio_record_finger_release_to_cancell">ปลดปล่อยเพื่อยกเลิก</string>
+    <string name="audio_record_too_long">การบันทึกยาวไป</string>
+    <string name="audio_record_too_short">การบันทึกสั้นไป</string>
+    <string name="audio_record_file_null">ไฟล์บันทึกผิดพลาด</string>
+    <string name="audio_record_file_not_exist">ไฟล์ที่บันทึกไม่ปรากฏ</string>
+</resources>
