@@ -7,4 +7,5 @@
     <string name="audio_record_too_short">The recording is too short.</string>
     <string name="audio_record_file_null">Recording file error.</string>
     <string name="audio_record_file_not_exist">The recording file doesn\'t exist.</string>
+    <string name="audio_record_failed">Record Failed</string>
 </resources>

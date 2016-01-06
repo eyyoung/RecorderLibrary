@@ -73,7 +73,11 @@ public class DefaultAudioRecordCallback implements IAudioRecordCallback {
         if (mPopWindow != null && mPopWindow.isShowing()) {
             mPopWindow.patchDismiss();
         }
-        Toast.makeText(mContext, t.getMessage(), Toast.LENGTH_LONG).show();
+        if (t instanceof RecordException) {
+            Toast.makeText(mContext, t.getMessage(), Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(mContext, R.string.audio_record_failed, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

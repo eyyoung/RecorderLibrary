@@ -2,6 +2,7 @@
 
 buildscript {
     repositories {
+        maven { url 'http://nexus.sdp.nd/nexus/content/groups/android-public/' }
         jcenter {
             url "http://jcenter.bintray.com/"
         }
@@ -17,6 +18,7 @@ buildscript {
 
 allprojects {
     repositories {
+        maven { url 'http://nexus.sdp.nd/nexus/content/groups/android-public/' }
         jcenter {
             url "http://jcenter.bintray.com/"
         }

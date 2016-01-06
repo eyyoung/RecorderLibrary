@@ -81,13 +81,13 @@ class AudioRecordTouchListener implements View.OnTouchListener {
             case MotionEvent.ACTION_UP:
                 y = (int) event.getY();
                 if (y < -100) {
-                    mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_oper_cancel)));
+                    mRecordSubject.onError(new RecordException(mContext.getString(R.string.audio_record_oper_cancel)));
                 }
 
                 long duration = 0;
                 duration = getDuration();
                 if (duration < mAudioRecordConfig.getMinRecordTime()) {
-                    mRecordSubject.onError(new Throwable(mContext.getString(R.string.audio_record_too_short)));
+                    mRecordSubject.onError(new RecordException(mContext.getString(R.string.audio_record_too_short)));
                 }
 
                 if (mVolumeChangeSubject != null) {
@@ -221,8 +221,6 @@ class AudioRecordTouchListener implements View.OnTouchListener {
                     .subscribe(new VolumeChangeSubscriber());
         }
     }
-
-    ;
 
     private class VolumeChangeSubscriber extends Subscriber<Object> {
 

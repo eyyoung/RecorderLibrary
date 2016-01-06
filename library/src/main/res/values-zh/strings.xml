@@ -7,4 +7,5 @@
     <string name="audio_record_too_short">录音太短</string>
     <string name="audio_record_file_null">录音文件异常</string>
     <string name="audio_record_file_not_exist">录音文件不存在</string>
+    <string name="audio_record_failed">录音失败！</string>
 </resources>
