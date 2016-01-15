@@ -51,6 +51,18 @@ class AudioRecordTouchListener implements View.OnTouchListener {
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         int y;
+        if (event.getPointerCount() == 2) {
+            mRecordSubject.onError(new RecordException(mContext.getString(R.string.audio_record_oper_cancel)));
+            if (mVolumeChangeSubject != null) {
+                mVolumeChangeSubscription.unsubscribe();
+            }
+            mRecordSubject.onCompleted();
+            if (mTimeSubscription != null) {
+                mTimeSubscription.unsubscribe();
+            }
+            mRecordSubscription.unsubscribe();
+            return true;
+        }
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mContext = v.getContext();
